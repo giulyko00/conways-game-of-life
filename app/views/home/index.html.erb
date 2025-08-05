@@ -1,0 +1,45 @@
+<div class="container mt-5">
+  <div class="row justify-content-center">
+    <div class="col-md-8">
+      <div class="text-center">
+        <h1 class="display-4 mb-4">Conway's Game of Life</h1>
+        <p class="lead mb-4">
+          Upload a text file with an initial generation and watch the evolution of cellular automata.
+        </p>
+        
+        <% if user_signed_in? %>
+          <div class="alert alert-success">
+            <strong>Welcome back, <%= current_user.email %>!</strong>
+          </div>
+          
+          <div class="d-grid gap-2 d-md-block">
+            <%= link_to "Upload New Game", new_game_path, class: "btn btn-primary btn-lg" %>
+            <%= link_to "My Games", games_path, class: "btn btn-outline-primary btn-lg" %>
+            <%= link_to "Logout", destroy_user_session_path, method: :delete, class: "btn btn-outline-secondary" %>
+          </div>
+        <% else %>
+          <div class="d-grid gap-2 d-md-block">
+            <%= link_to "Sign Up", new_user_registration_path, class: "btn btn-primary btn-lg" %>
+            <%= link_to "Login", new_user_session_path, class: "btn btn-outline-primary btn-lg" %>
+          </div>
+        <% end %>
+      </div>
+      
+      <div class="mt-5">
+        <h3>How it works:</h3>
+        <ol class="list-group list-group-numbered">
+          <li class="list-group-item">Create an account or login</li>
+          <li class="list-group-item">Upload a text file with the format:
+            <ul class="mt-2">
+              <li><code>Generation N:</code> (where N is the generation number)</li>
+              <li><code>R C</code> (rows and columns)</li>
+              <li>R lines of <code>*</code> (alive) and <code>.</code> (dead) cells</li>
+            </ul>
+          </li>
+          <li class="list-group-item">View your grid and click "Start" to see the next generation</li>
+          <li class="list-group-item">Watch the cellular automata evolve according to Conway's rules</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</div>
