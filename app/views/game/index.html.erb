@@ -1,0 +1,193 @@
+<div class="container mt-4">
+  <div class="row">
+    <div class="col-md-12">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Conway's Game of Life</h1>
+        <%= link_to "← Back to Home", root_path, class: "btn btn-outline-secondary" %>
+      </div>
+      
+      <% if notice %>
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+          <%= notice %>
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+      <% end %>
+      
+      <% if alert %>
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+          <%= alert %>
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+      <% end %>
+      
+      <% if @game_data.present? %>
+        <!-- Game Display -->
+        <div class="row justify-content-center">
+          <div class="col-md-8">
+            <div class="card">
+              <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Generation <span id="currentGeneration"><%= @game_data['generation_number'] %></span></h5>
+                <div>
+                  <button id="nextGenerationBtn" class="btn btn-primary">Next Generation</button>
+                  <button id="resetGameBtn" class="btn btn-outline-danger">Reset</button>
+                </div>
+              </div>
+              <div class="card-body text-center">
+                <div id="gameGrid" class="game-grid">
+                  <% @grid.each_with_index do |row, row_index| %>
+                    <div class="grid-row">
+                      <% row.each_with_index do |cell, col_index| %>
+                        <div class="grid-cell <%= cell ? 'alive' : 'dead' %>"></div>
+                      <% end %>
+                    </div>
+                  <% end %>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+      <% else %>
+        <!-- Upload Form -->
+        <div class="row justify-content-center">
+          <div class="col-md-6">
+            <div class="card">
+              <div class="card-header">
+                <h5 class="mb-0">Upload Game File</h5>
+              </div>
+              <div class="card-body">
+                <%= form_with url: game_upload_path, multipart: true, local: true do |form| %>
+                  <div class="mb-3">
+                    <%= form.label :file, "Select Game File", class: "form-label" %>
+                    <%= form.file_field :file, class: "form-control", accept: ".txt" %>
+                    <div class="form-text">Upload a text file with the game initial state.</div>
+                  </div>
+                  
+                  <div class="d-grid">
+                    <%= form.submit "Upload Game", class: "btn btn-primary" %>
+                  </div>
+                <% end %>
+                
+                <hr>
+                
+                <h6>File Format:</h6>
+                <pre class="small bg-light p-2 rounded"><code>Generation 0:
+5 5
+..*..
+..*..
+..*..
+.....
+.....</code></pre>
+                
+                <ul class="small mt-2">
+                  <li>First line: <code>Generation N:</code></li>
+                  <li>Second line: <code>R C</code> (rows and columns)</li>
+                  <li>Next R lines: <code>*</code> for alive, <code>.</code> for dead</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>
+
+<style>
+.game-grid {
+  display: inline-block;
+  border: 2px solid #333;
+  background: #f8f9fa;
+}
+
+.grid-row {
+  display: flex;
+  margin: 0;
+  padding: 0;
+}
+
+.grid-cell {
+  width: 20px;
+  height: 20px;
+  border: 1px solid #ddd;
+  margin: 0;
+  padding: 0;
+}
+
+.grid-cell.alive {
+  background-color: #000;
+}
+
+.grid-cell.dead {
+  background-color: #fff;
+}
+
+.grid-cell:hover {
+  opacity: 0.8;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const nextBtn = document.getElementById('nextGenerationBtn');
+  const resetBtn = document.getElementById('resetGameBtn');
+  
+  if (nextBtn) {
+    nextBtn.addEventListener('click', function() {
+      nextBtn.disabled = true;
+      nextBtn.textContent = 'Computing...';
+      
+      fetch('/game/next_generation', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content
+        }
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          updateGrid(data.grid);
+          document.getElementById('currentGeneration').textContent = data.generation;
+        } else {
+          alert('Error: ' + data.error);
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while computing the next generation.');
+      })
+      .finally(() => {
+        nextBtn.disabled = false;
+        nextBtn.textContent = 'Next Generation';
+      });
+    });
+  }
+  
+  if (resetBtn) {
+    resetBtn.addEventListener('click', function() {
+      if (confirm('Are you sure you want to reset the game?')) {
+        // Clear session and reload
+        fetch('/game/reset', { method: 'POST' })
+          .then(() => window.location.reload())
+          .catch(() => window.location.reload());
+      }
+    });
+  }
+  
+  function updateGrid(grid) {
+    const gridElement = document.getElementById('gameGrid');
+    let html = '';
+    
+    grid.forEach(row => {
+      html += '<div class="grid-row">';
+      row.forEach(cell => {
+        html += `<div class="grid-cell ${cell ? 'alive' : 'dead'}"></div>`;
+      });
+      html += '</div>';
+    });
+    
+    gridElement.innerHTML = html;
+  }
+});
+</script>

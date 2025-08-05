@@ -12,10 +12,9 @@
             <strong>Welcome back, <%= current_user.email %>!</strong>
           </div>
           
-          <div class="d-grid gap-2 d-md-block">
-            <%= link_to "Upload New Game", new_game_path, class: "btn btn-primary btn-lg" %>
-            <%= link_to "My Games", games_path, class: "btn btn-outline-primary btn-lg" %>
-            <%= link_to "Logout", destroy_user_session_path, method: :delete, class: "btn btn-outline-secondary" %>
+          <div class="d-flex gap-3 justify-content-center flex-wrap">
+            <%= link_to "Start New Game", game_path, class: "btn btn-primary btn-lg" %>
+            <%= button_to "Logout", destroy_user_session_path, method: :delete, class: "btn btn-outline-secondary btn-lg", form: { style: "display: inline;" } %>
           </div>
         <% else %>
           <div class="d-grid gap-2 d-md-block">
