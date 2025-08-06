@@ -55,8 +55,17 @@ class GameController < ApplicationController
   end
   
   def reset
+    Rails.logger.info "=== Game Reset ==="
+    Rails.logger.info "Clearing session game_state"
+    
     session[:game_state] = nil
-    head :ok
+    
+    Rails.logger.info "Game state cleared successfully"
+    
+    render json: { 'success' => true, 'message' => 'Game reset successfully' }
+  rescue StandardError => e
+    Rails.logger.error "Error in reset: #{e.message}"
+    render json: { 'success' => false, 'error' => e.message }, status: 422
   end
   
   private
