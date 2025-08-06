@@ -24,22 +24,33 @@ class GameController < ApplicationController
   end
   
   def next_generation
+    Rails.logger.info "=== Next Generation Debug ==="
+    Rails.logger.info "Session game_state present: #{session[:game_state].present?}"
+    
     if session[:game_state].present?
       begin
+        Rails.logger.info "Session data: #{session[:game_state]}"
         game_data = JSON.parse(session[:game_state])
+        Rails.logger.info "Parsed game_data: #{game_data}"
+        
         new_generation = compute_next_generation(game_data)
+        Rails.logger.info "New generation computed: #{new_generation}"
+        
         session[:game_state] = new_generation.to_json
         
         render json: { 
-          success: true, 
-          generation: new_generation['generation_number'],
-          grid: parse_grid(new_generation['state'])
+          'success' => true, 
+          'generation' => new_generation['generation_number'],
+          'grid' => parse_grid(new_generation['state'])
         }
       rescue StandardError => e
-        render json: { success: false, error: e.message }, status: 422
+        Rails.logger.error "Error in next_generation: #{e.message}"
+        Rails.logger.error e.backtrace.join("\n")
+        render json: { 'success' => false, 'error' => e.message }, status: 422
       end
     else
-      render json: { success: false, error: 'No game state found' }, status: 422
+      Rails.logger.error "No game state found in session"
+      render json: { 'success' => false, 'error' => 'No game state found' }, status: 422
     end
   end
   
@@ -90,10 +101,10 @@ class GameController < ApplicationController
     state = grid_lines.join("\n")
     
     {
-      generation_number: generation_number,
-      rows: rows,
-      cols: cols,
-      state: state
+      'generation_number' => generation_number,
+      'rows' => rows,
+      'cols' => cols,
+      'state' => state
     }
   end
   
@@ -131,10 +142,10 @@ class GameController < ApplicationController
     end.join("\n")
     
     {
-      generation_number: game_data['generation_number'] + 1,
-      rows: rows,
-      cols: cols,
-      state: new_state
+      'generation_number' => game_data['generation_number'] + 1,
+      'rows' => rows,
+      'cols' => cols,
+      'state' => new_state
     }
   end
   

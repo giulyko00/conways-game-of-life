@@ -25,11 +25,15 @@
         <div class="row justify-content-center">
           <div class="col-md-8">
             <div class="card">
-              <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">Generation <span id="currentGeneration"><%= @game_data['generation_number'] %></span></h5>
-                <div>
+              <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                  <h5 class="mb-0">Generation <span id="currentGeneration"><%= @game_data['generation_number'] %></span></h5>
+                  <button id="resetGameBtn" class="btn btn-outline-danger btn-sm">Reset</button>
+                </div>
+                <div class="d-flex gap-2 justify-content-center">
                   <button id="nextGenerationBtn" class="btn btn-primary">Next Generation</button>
-                  <button id="resetGameBtn" class="btn btn-outline-danger">Reset</button>
+                  <button id="autoPlayBtn" class="btn btn-success">Start Auto Play</button>
+                  <button id="stopAutoBtn" class="btn btn-warning" style="display: none;">Stop</button>
                 </div>
               </div>
               <div class="card-body text-center">
@@ -131,36 +135,96 @@
 document.addEventListener('DOMContentLoaded', function() {
   const nextBtn = document.getElementById('nextGenerationBtn');
   const resetBtn = document.getElementById('resetGameBtn');
+  const autoPlayBtn = document.getElementById('autoPlayBtn');
+  const stopAutoBtn = document.getElementById('stopAutoBtn');
   
+  let autoPlayInterval = null;
+  let isAutoPlaying = false;
+  
+  // Manual next generation
   if (nextBtn) {
     nextBtn.addEventListener('click', function() {
+      if (isAutoPlaying) return; // Prevent manual clicks during auto-play
+      computeNextGeneration();
+    });
+  }
+  
+  // Auto-play functionality
+  if (autoPlayBtn) {
+    autoPlayBtn.addEventListener('click', function() {
+      startAutoPlay();
+    });
+  }
+  
+  if (stopAutoBtn) {
+    stopAutoBtn.addEventListener('click', function() {
+      stopAutoPlay();
+    });
+  }
+  
+  function startAutoPlay() {
+    isAutoPlaying = true;
+    autoPlayBtn.style.display = 'none';
+    stopAutoBtn.style.display = 'inline-block';
+    nextBtn.disabled = true;
+    
+    // Start with immediate first generation
+    computeNextGeneration();
+    
+    // Then continue every 1 second
+    autoPlayInterval = setInterval(() => {
+      computeNextGeneration();
+    }, 1000);
+  }
+  
+  function stopAutoPlay() {
+    isAutoPlaying = false;
+    clearInterval(autoPlayInterval);
+    autoPlayInterval = null;
+    
+    autoPlayBtn.style.display = 'inline-block';
+    stopAutoBtn.style.display = 'none';
+    nextBtn.disabled = false;
+  }
+  
+  function computeNextGeneration() {
+    if (!isAutoPlaying) {
       nextBtn.disabled = true;
       nextBtn.textContent = 'Computing...';
-      
-      fetch('/game/next_generation', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content
+    }
+    
+    fetch('/game/next_generation', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content
+      }
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        updateGrid(data.grid);
+        document.getElementById('currentGeneration').textContent = data.generation;
+      } else {
+        console.error('Error:', data.error);
+        if (isAutoPlaying) {
+          stopAutoPlay(); // Stop auto-play on error
         }
-      })
-      .then(response => response.json())
-      .then(data => {
-        if (data.success) {
-          updateGrid(data.grid);
-          document.getElementById('currentGeneration').textContent = data.generation;
-        } else {
-          alert('Error: ' + data.error);
-        }
-      })
-      .catch(error => {
-        console.error('Error:', error);
-        alert('An error occurred while computing the next generation.');
-      })
-      .finally(() => {
+        alert('Error: ' + data.error);
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      if (isAutoPlaying) {
+        stopAutoPlay(); // Stop auto-play on error
+      }
+      alert('An error occurred while computing the next generation.');
+    })
+    .finally(() => {
+      if (!isAutoPlaying) {
         nextBtn.disabled = false;
         nextBtn.textContent = 'Next Generation';
-      });
+      }
     });
   }
   
